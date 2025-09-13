@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+* {
+  scrollbar-color: gray white;
+  font-family: "Inter", sans-serif;
+}
+.jet {
+  font-family: "JetBrains Mono", monospace;
+}

@@ -1,0 +1,524 @@
+openapi: 3.0.0
+info:
+  title: Mini CRM API
+  version: "1.0.0"
+  description: API docs for Mini CRM
+
+servers:
+  - url: https://mini-crm-plaform-qhsk.onrender.com
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      required:
+        - name
+        - email
+        - vendor_reference
+      properties:
+        id:
+          type: string
+          format: ObjectId
+        name:
+          type: string
+        email:
+          type: string
+        vendor_reference:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Customer:
+      type: object
+      required:
+        - name
+        - email
+        - owner
+      properties:
+        id:
+          type: string
+          format: ObjectId
+        owner:
+          type: string
+          format: ObjectId
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        totalSpend:
+          type: number
+          default: 0
+        visits:
+          type: number
+          default: 0
+        lastPurchased:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Order:
+      type: object
+      required:
+        - owner
+        - customerId
+        - amount
+        - orderDate
+      properties:
+        id:
+          type: string
+          format: ObjectId
+        owner:
+          type: string
+          format: ObjectId
+        customerId:
+          type: string
+          format: ObjectId
+        amount:
+          type: number
+        items:
+          type: array
+          items:
+            type: string
+        orderDate:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [Placed, Completed, Cancelled]
+          default: Placed
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    OrderWithCustomer:
+      allOf:
+        - $ref: "#/components/schemas/Order"
+        - type: object
+          properties:
+            customer:
+              $ref: "#/components/schemas/Customer"
+
+    Campaign:
+      type: object
+      required:
+        - owner
+        - name
+        - rules
+        - logic
+        - objective
+        - audienceSize
+      properties:
+        id:
+          type: string
+          format: ObjectId
+        owner:
+          type: string
+          format: ObjectId
+        name:
+          type: string
+        rules:
+          type: array
+          items:
+            type: object
+        logic:
+          type: string
+          enum: [AND, OR]
+          default: AND
+        audienceSize:
+          type: number
+        status:
+          type: string
+          enum: [running, completed]
+          default: running
+        objective:
+          type: string
+        deliveryStats:
+          type: object
+          properties:
+            sent:
+              type: number
+              default: 0
+            failed:
+              type: number
+              default: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CommunicationLog:
+      type: object
+      required:
+        - campaignId
+        - customerId
+        - message
+        - vendor_reference
+      properties:
+        id:
+          type: string
+          format: ObjectId
+        campaignId:
+          type: string
+          format: ObjectId
+        customerId:
+          type: string
+          format: ObjectId
+        message:
+          type: string
+        delivery_status:
+          type: string
+          enum: [pending, sent, failed]
+          default: pending
+        vendor_reference:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    GoogleAuthRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: Google OAuth2 ID token
+
+    JWTAuth:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: JWT token for authenticated requests
+        expiresIn:
+          type: integer
+          description: Expiration time in seconds
+
+    SegmentPreview:
+      type: object
+      properties:
+        audienceSize:
+          type: integer
+          description: Estimated number of users matching the segmentation rules
+        matchedCustomerIds:
+          type: array
+          description: Optional list of matched customer IDs (if included)
+          items:
+            type: string
+            format: ObjectId
+
+    AIMessageSuggestion:
+      type: object
+      properties:
+        suggestions:
+          type: array
+          description: List of AI-generated SMS suggestions
+          items:
+            type: string
+
+paths:
+  /api/auth/google:
+    post:
+      summary: Google OAuth2 login/signup
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoogleAuthRequest"
+      responses:
+        200:
+          description: Successful authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JWTAuth"
+        401:
+          description: Invalid Google token
+
+  /api/customers:
+    post:
+      summary: Create a new customer (async)
+      description: Enqueues customer creation for background processing.
+      tags: [Customer]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email]
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                phone:
+                  type: string
+                  pattern: '^\d{10,15}$'
+      responses:
+        202:
+          description: Customer creation accepted for async processing (queued)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accepted:
+                    type: boolean
+        400:
+          description: Bad Request
+
+  /api/orders:
+    post:
+      summary: Create a new order (async)
+      description: Enqueues order creation for background processing.
+      tags: [Order]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [customerId, amount, orderDate]
+              properties:
+                customerId:
+                  type: string
+                  format: ObjectId
+                amount:
+                  type: number
+                orderDate:
+                  type: string
+                  format: date-time
+                items:
+                  type: array
+                  items:
+                    type: string
+                status:
+                  type: string
+                  enum: [Placed, Completed, Cancelled]
+                  default: Placed
+      responses:
+        202:
+          description: Order creation accepted for async processing (queued)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accepted:
+                    type: boolean
+        400:
+          description: Bad Request
+
+  /api/campaigns:
+    post:
+      summary: Create a new campaign and send messages to its audience
+      tags: [Campaign]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, rules, logic, objective]
+              properties:
+                name:
+                  type: string
+                rules:
+                  type: array
+                  items:
+                    type: object
+                logic:
+                  type: string
+                  enum: [AND, OR]
+                objective:
+                  type: string
+      responses:
+        201:
+          description: Campaign created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Campaign"
+        400:
+          description: Missing required fields
+
+  /api/campaigns/history:
+    get:
+      summary: Get campaign history
+      tags: [Campaign]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of campaign history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Campaign"
+
+  /api/campaigns/preview:
+    post:
+      summary: Preview segment audience size for a given rule
+      tags: [Campaign]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rules, logic]
+              properties:
+                rules:
+                  type: array
+                  items:
+                    type: object
+                logic:
+                  type: string
+                  enum: [AND, OR]
+      responses:
+        200:
+          description: Segment audience size
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SegmentPreview"
+        400:
+          description: Missing required fields
+        500:
+          description: Error evaluating rule
+
+  /api/ai/suggest:
+    post:
+      summary: Suggest 3 catchy SMS messages using AI for a given campaign goal
+      tags: [AI]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [objective]
+              properties:
+                objective:
+                  type: string
+      responses:
+        200:
+          description: AI generated message suggestions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIMessageSuggestion"
+        400:
+          description: Objective is required
+        500:
+          description: Failed to fetch AI suggestions
+
+  /api/vendor/send:
+    post:
+      summary: Simulated vendor message delivery
+      tags: [Vendor]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [campaignId, customerId, personalizedMessage, email]
+              properties:
+                campaignId:
+                  type: string
+                  format: ObjectId
+                customerId:
+                  type: string
+                  format: ObjectId
+                personalizedMessage:
+                  type: string
+                email:
+                  type: string
+                  format: email
+      responses:
+        200:
+          description: Successfully queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        400:
+          description: Bad Request
+        500:
+          description: Internal Server Error
+
+  /api/vendor/receipt:
+    post:
+      summary: Vendor delivery receipt
+      tags: [Vendor]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VendorDeliveryReceipt"
+      responses:
+        200:
+          description: Delivery status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
