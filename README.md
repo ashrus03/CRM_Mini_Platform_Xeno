@@ -1,5 +1,7 @@
 Mini CRM Platform
+
 A modern, full-stack CRM solution built to tackle real-world marketing challenges. This platform enables businesses to perform smart customer segmentation, create and deliver personalized marketing campaigns, and leverage AI for intelligent message generation. The entire system is designed for scalability, featuring an asynchronous, message-driven architecture.
+
 🚀 Key Features
 🎯 Smart Customer Segmentation: Build targeted campaign audiences using a dynamic rule builder with complex AND/OR logic.
 🤖 AI-Powered Messaging: Instantly generate compelling and relevant campaign messages using Google's Gemini AI based on your marketing objective.
@@ -7,10 +9,12 @@ A modern, full-stack CRM solution built to tackle real-world marketing challenge
 🔄 Asynchronous Data Processing: A scalable pub-sub architecture using Redis Streams ensures that high-volume data ingestion for customers and orders is handled efficiently in the background without blocking the user interface.
 🔐 Secure Google Authentication: User access is secured through Google OAuth 2.0, ensuring that only authenticated users can manage campaigns and data.
 ✅ Intuitive Web Interface: A clean, modern, and responsive user interface built with React and Tailwind CSS for a seamless user experience.
+
 🌐 Live Demo & API
 Live Frontend: https://crm-mini-platform-xeno.vercel.app/
 Backend API: https://mini-crm-backend-mhhg.onrender.com
 API Documentation (Swagger): https://mini-crm-backend-mhhg.onrender.com/api-docs
+
 🏗️ Architecture
 The application follows a decoupled, service-oriented architecture designed for scalability and resilience.
 [ Frontend (React on Vercel) ] <--- REST API ---> [ Backend (Node.js on Render) ]
@@ -30,6 +34,7 @@ The Frontend is a single-page application that communicates with the backend via
 The Backend API handles user authentication, validation, and business logic. For data-intensive tasks like ingestion, it acts as a producer, publishing jobs to Redis Streams.
 Redis Streams serves as a message broker, decoupling the API from the data processing logic.
 The Worker is a separate Node.js process that consumes messages from Redis Streams, processes them in batches, and persists the data to MongoDB.
+
 🧠 Tech Stack
 Frontend:
 React 19 with Vite
@@ -44,8 +49,11 @@ Redis for message queuing (Redis Streams)
 JWT (JSON Web Tokens) for securing the API
 Google Gemini AI for message generation
 Swagger UI for API documentation
+
+
 💪 Getting Started: Local Development
 Follow these steps to set up and run the project on your local machine.
+
 Prerequisites
 Node.js (v18.0 or higher)
 MongoDB: Can be installed locally or use a free MongoDB Atlas cluster.
