@@ -77,6 +77,7 @@ Create a .env file by copying .env.sample.
 Fill in the required values in the .env file (see below).
 Start the frontend development server: npm run dev
 The frontend will be running at http://localhost:5173.
+
 ⚙️ Environment Variables
 Backend (/backend/.env)
 PORT=8000
