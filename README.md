@@ -1,0 +1,97 @@
+Mini CRM Platform
+A modern, full-stack CRM solution built to tackle real-world marketing challenges. This platform enables businesses to perform smart customer segmentation, create and deliver personalized marketing campaigns, and leverage AI for intelligent message generation. The entire system is designed for scalability, featuring an asynchronous, message-driven architecture.
+🚀 Key Features
+🎯 Smart Customer Segmentation: Build targeted campaign audiences using a dynamic rule builder with complex AND/OR logic.
+🤖 AI-Powered Messaging: Instantly generate compelling and relevant campaign messages using Google's Gemini AI based on your marketing objective.
+📊 Real-time Campaign Analytics: Track the performance of your campaigns with up-to-the-second delivery stats (sent, failed) on a dedicated history page.
+🔄 Asynchronous Data Processing: A scalable pub-sub architecture using Redis Streams ensures that high-volume data ingestion for customers and orders is handled efficiently in the background without blocking the user interface.
+🔐 Secure Google Authentication: User access is secured through Google OAuth 2.0, ensuring that only authenticated users can manage campaigns and data.
+✅ Intuitive Web Interface: A clean, modern, and responsive user interface built with React and Tailwind CSS for a seamless user experience.
+🌐 Live Demo & API
+Live Frontend: https://crm-mini-platform-xeno.vercel.app/
+Backend API: https://mini-crm-backend-mhhg.onrender.com
+API Documentation (Swagger): https://mini-crm-backend-mhhg.onrender.com/api-docs
+🏗️ Architecture
+The application follows a decoupled, service-oriented architecture designed for scalability and resilience.
+[ Frontend (React on Vercel) ] <--- REST API ---> [ Backend (Node.js on Render) ]
+           |                                                    |
+           |                                                    |
+[ End User (Browser) ]                                          |-----> [ Redis Streams ]
+                                                                |         (Message Queue)
+                                                                |
+                                                                |-----> [ MongoDB Atlas ]
+                                                                          (Database)
+                                                                              ^
+                                                                              |
+                                                                [ Worker (Node.js Consumer) ]
+
+
+The Frontend is a single-page application that communicates with the backend via a REST API.
+The Backend API handles user authentication, validation, and business logic. For data-intensive tasks like ingestion, it acts as a producer, publishing jobs to Redis Streams.
+Redis Streams serves as a message broker, decoupling the API from the data processing logic.
+The Worker is a separate Node.js process that consumes messages from Redis Streams, processes them in batches, and persists the data to MongoDB.
+🧠 Tech Stack
+Frontend:
+React 19 with Vite
+React Router v7 for client-side routing
+Tailwind CSS for styling
+Axios for API requests
+@react-oauth/google for Google authentication
+Backend:
+Node.js with Express.js
+MongoDB with Mongoose ODM
+Redis for message queuing (Redis Streams)
+JWT (JSON Web Tokens) for securing the API
+Google Gemini AI for message generation
+Swagger UI for API documentation
+💪 Getting Started: Local Development
+Follow these steps to set up and run the project on your local machine.
+Prerequisites
+Node.js (v18.0 or higher)
+MongoDB: Can be installed locally or use a free MongoDB Atlas cluster.
+Redis: Requires a modern version that supports Streams (v5.0+). For Windows, it is recommended to use Redis via WSL (Windows Subsystem for Linux).
+1. Clone the Repository
+git clone [https://github.com/ashrus03/CRM_Mini_Platform_Xeno.git](https://github.com/ashrus03/CRM_Mini_Platform_Xeno.git)
+cd CRM_Mini_Platform_Xeno
+
+
+2. Backend Setup
+Navigate to the backend directory: cd backend
+Install dependencies: npm install
+Create a .env file by copying .env.sample.
+Fill in the required values in the .env file (see below).
+Start the backend server and the worker: npm start
+The backend will be running at http://localhost:8000.
+3. Frontend Setup
+In a new terminal, navigate to the frontend directory: cd frontend
+Install dependencies: npm install
+Create a .env file by copying .env.sample.
+Fill in the required values in the .env file (see below).
+Start the frontend development server: npm run dev
+The frontend will be running at http://localhost:5173.
+⚙️ Environment Variables
+Backend (/backend/.env)
+PORT=8000
+MONGO_URI=<your-mongodb-uri>
+JWT_SECRET=<your-strong-jwt-secret>
+GOOGLE_CLIENT_ID=<your-google-oauth-client-id>
+GOOGLE_CLIENT_SECRET=<your-google-oauth-client-secret>
+GEMINI_API_KEY=<your-google-gemini-api-key>
+REDIS_URL=<your-redis-url>
+BASE_URL_BACKEND=http://localhost:8000
+BASE_URL_FRONTEND=http://localhost:5173
+
+
+Frontend (/frontend/.env)
+VITE_BASE_URL_BACKEND=http://localhost:8000/api
+VITE_GOOGLE_CLIENT_ID=<your-google-oauth-client-id>
+
+
+🤖 AI Integration: AI-Driven Message Suggestions
+This platform uses the Google Gemini API to enhance the campaign creation process.
+Feature: When creating a campaign, the user provides a marketing objective (e.g., "win back inactive customers").
+Implementation: The application sends this objective to the Gemini API, which then generates 2-3 distinct, ready-to-use message variants tailored to that goal. This helps the user quickly craft effective and engaging campaign content without leaving the platform.
+📝 Known Limitations & Assumptions
+The "Vendor API" for message delivery is a simulation and does not send real messages. It simulates a 90% success rate to mimic real-world scenarios.
+The AI message generation is powerful but may occasionally produce generic results depending on the input objective.
+The data models for customers and orders are simplified for the purpose of this assignment.
