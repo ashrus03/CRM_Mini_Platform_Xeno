@@ -114,39 +114,77 @@ async function handleCustomerIngestion(entries) {
   }
 }
 
-async function processOrderMessages() {
-  while (true) {
+async function handleOrderIngestion(entries) {
+  const ordersToInsert = [];
+  const customerUpdates = new Map();
+  const ackIds = [];
+
+  for (const { id, data } of entries) {
     try {
-      const response = await redis.xreadgroup(
-        "GROUP",
-        ORDER_GROUP_NAME,
-        ORDER_CONSUMER_NAME,
-        "BLOCK",
-        1000,
-        "COUNT",
-        10,
-        "STREAMS",
-        ORDER_STREAM_KEY,
-        ">"
-      );
+      const { customerId, owner, orderDate, amount, email, items } = data;
 
-      if (!response) continue;
+      const parsedItems = JSON.parse(items || "[]");
+      const parsedAmount = Number(amount);
 
-      const entries = [];
+      ordersToInsert.push({
+        customerId,
+        owner,
+        orderDate: new Date(orderDate), // Ensure it's a date object
+        amount: parsedAmount,
+        email,
+        items: parsedItems,
+      });
 
-      for (const [, messages] of response) {
-        for (const [id, fields] of messages) {
-          const data = parseFields(fields);
-          entries.push({ id, data });
-        }
+      // This is the logic that tracks updates for each customer
+      if (!customerUpdates.has(customerId)) {
+        customerUpdates.set(customerId, {
+          totalSpend: 0,
+          visitCount: 0,
+          lastPurchased: new Date(orderDate),
+        });
       }
+      const update = customerUpdates.get(customerId);
+      update.totalSpend += parsedAmount;
+      update.visitCount += 1; // THE FIX: Increment visit count for each order
+      update.lastPurchased = new Date(orderDate); // Track the latest purchase date
 
-      if (entries.length > 0) {
-        await handleOrderIngestion(entries);
-      }
+      ackIds.push(id);
     } catch (err) {
-      console.error("Order stream read error:", err.message);
+      console.error("Error parsing order message:", err.message);
     }
+  }
+
+  try {
+    if (ordersToInsert.length > 0) {
+      await Order.insertMany(ordersToInsert);
+      console.log(`Inserted ${ordersToInsert.length} orders`);
+    }
+
+    const bulkCustomerOps = Array.from(customerUpdates.entries()).map(
+      ([customerId, { totalSpend, visitCount, lastPurchased }]) => ({
+        updateOne: {
+          filter: { _id: customerId },
+          update: {
+            $inc: {
+              totalSpend: totalSpend,
+              visits: visitCount, // THE FIX: Apply the visit count increment
+            },
+            $set: { lastPurchased: lastPurchased },
+          },
+        },
+      })
+    );
+
+    if (bulkCustomerOps.length > 0) {
+      await Customer.bulkWrite(bulkCustomerOps);
+      console.log(`Updated ${bulkCustomerOps.length} customers`);
+    }
+
+    if (ackIds.length > 0) {
+      await redis.xack(ORDER_STREAM_KEY, ORDER_GROUP_NAME, ...ackIds);
+    }
+  } catch (err) {
+    console.error("Bulk order ingestion error:", err.message);
   }
 }
 
