@@ -1,5 +1,3 @@
-Here is a new and improved README file for your project.
-
 # Mini CRM Platform
 
 A modern, full-stack CRM solution built to tackle real-world marketing challenges. This platform enables businesses to perform smart customer segmentation, create and deliver personalized marketing campaigns, and leverage AI for intelligent message generation. The entire system is designed for scalability, featuring an asynchronous, message-driven architecture.
